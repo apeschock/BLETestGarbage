@@ -18,13 +18,16 @@ BLECharacteristic sensorPositionCharacteristic(BLEUUID((uint16_t)0x2A38), BLECha
 BLEDescriptor heartRateDescriptor(BLEUUID((uint16_t)0x2901));
 BLEDescriptor sensorPositionDescriptor(BLEUUID((uint16_t)0x2901));
 
+BLEDevice* pDevice;
 BLEServer* pServer;
+esp_bd_addr_t connectedAddr;
 
 class MyServerCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer, esp_ble_gatts_cb_param_t* param) {
         _BLEClientConnected = true;
-        param->connect.remote_bda
-        param->gatts_read_evt_param.bda
+        for (int i = 0; i < ESP_BD_ADDR_LEN; ++i) {
+            connectedAddr[i] = param->connect.remote_bda[i];
+        }
     };
 
     void onDisconnect(BLEServer* pServer) {
@@ -35,8 +38,10 @@ class MyServerCallbacks : public BLEServerCallbacks {
 void InitBLE() {
     BLEDevice::init("FT7");
     // Create the BLE Server
-    pServer = BLEDevice::createServer();
+    pServer = pDevice->createServer();
+    //pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
+    pDevice->setCustomGapHandler(gapEventHandler);
 
     // Create the BLE Service
     BLEService* pHeart = pServer->createService(heartRateService);
@@ -84,15 +89,9 @@ void loop() {
     delay(2000);
 
     if (pServer->getConnectedCount() >= 1) {
-        std::map<uint16_t, conn_status_t> map = pServer->getPeerDevices(false);
-        std::vector<esp_bd_addr_t> keys;
-        for (auto& it : map) {
-            keys.push_back(it.first);
-        }
-
-        getRssi(keys[0].);
+        getRssi(connectedAddr);
     }
-    
+
 }
 
 float getRssi(esp_bd_addr_t remote_addr) {
@@ -101,14 +100,15 @@ float getRssi(esp_bd_addr_t remote_addr) {
         ESP_LOGE(LOG_TAG, "<< getRssi: esp_ble_gap_read_rssi: rc=%d %s", rc, GeneralUtils::errorToString(rc));
         return 0;
     }
-    int rssiValue = m_semaphoreRssiCmplEvt.wait("getRssi");
-    return rssiValue;
+    //int rssiValue = m_semaphoreRssiCmplEvt.wait("getRssi");
+    return 0.0f;
 }
 
 static void gapEventHandler(esp_gap_ble_cb_event_t  event, esp_ble_gap_cb_param_t* param) {
-    if(event == ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT){
+    if (event == ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT) {
         param->read_rssi_cmpl.status;
         param->read_rssi_cmpl.rssi;
         BLEAddress(param->read_rssi_cmpl.remote_addr).toString().c_str();
+        Serial.println(param->read_rssi_cmpl.rssi);
     }
 }
