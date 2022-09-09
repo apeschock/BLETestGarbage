@@ -32,6 +32,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) {
         _BLEClientConnected = false;
+        ESP.restart();
     }
 };
 
@@ -78,7 +79,7 @@ void loop() {
     int energyUsed = 3000;
     heart[3] = energyUsed / 256;
     heart[2] = energyUsed - (heart[2] * 256);
-    Serial.println(bpm);
+    //Serial.println(bpm);
 
     heartRateMeasurementCharacteristics.setValue(heart, 8);
     heartRateMeasurementCharacteristics.notify();
@@ -86,7 +87,7 @@ void loop() {
     sensorPositionCharacteristic.setValue(hrmPos, 1);
     bpm++;
 
-    delay(2000);
+    delay(100);
 
     if (pServer->getConnectedCount() >= 1) {
         getRssi(connectedAddr);
@@ -106,8 +107,8 @@ float getRssi(esp_bd_addr_t remote_addr) {
 
 static void gapEventHandler(esp_gap_ble_cb_event_t  event, esp_ble_gap_cb_param_t* param) {
     if (event == ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT) {
-        param->read_rssi_cmpl.status;
-        param->read_rssi_cmpl.rssi;
+        //param->read_rssi_cmpl.status;
+        //param->read_rssi_cmpl.rssi;
         BLEAddress(param->read_rssi_cmpl.remote_addr).toString().c_str();
         Serial.println(param->read_rssi_cmpl.rssi);
     }
